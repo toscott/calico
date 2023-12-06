@@ -168,41 +168,41 @@ func (c *flannelMigrationController) Run(stopCh chan struct{}) {
 	// Disable VXLAN in Felix explicitly. We don't want to turn this on until we have
 	// updated the Calico nodes with the necessary VTEP information from flannel. This ensures
 	// that Calico will respect flannel's VXLAN traffic once enabled.
-	if err := c.ipamMigrator.SetVXLANMode(context.TODO(), vxlanModeDisabled); err != nil {
-		log.WithError(err).Errorf("Error disabling VXLAN")
-		c.HandleError(err)
-	}
+	//if err := c.ipamMigrator.SetVXLANMode(context.TODO(), vxlanModeDisabled); err != nil {
+	//	log.WithError(err).Errorf("Error disabling VXLAN")
+	//	c.HandleError(err)
+	//}
 
-	// Initialise Calico IPAM before we handle any nodes.
-	err = c.ipamMigrator.InitialiseIPPoolAndFelixConfig()
-	if err != nil {
-		log.WithError(err).Errorf("Error initialising default ipool and Felix configuration.")
-		c.HandleError(err)
-	}
+	//// Initialise Calico IPAM before we handle any nodes.
+	//err = c.ipamMigrator.InitialiseIPPoolAndFelixConfig()
+	//if err != nil {
+	//	log.WithError(err).Errorf("Error initialising default ipool and Felix configuration.")
+	//	c.HandleError(err)
+	//}
+	//
+	//// Wait till k8s cache is synced
+	//go c.informer.Run(stopCh)
+	//log.Infof("Waiting to sync with Kubernetes API (Nodes)")
+	//if !cache.WaitForNamedCacheSync("flannelMigrationController", stopCh, c.informer.HasSynced) {
+	//	log.Info("Failed to sync resources, received signal for controller to shut down.")
+	//	return
+	//}
+	//log.Infof("Finished syncing with Kubernetes API (Nodes)")
+	//
+	//// Run IPAM migration. Get list of nodes need to be migrated.
+	//c.flannelNodes, err = c.runIpamMigrationForNodes()
+	//if err != nil {
+	//	log.WithError(err).Errorf("Error running ipam migration.")
+	//	c.HandleError(err)
+	//}
 
-	// Wait till k8s cache is synced
-	go c.informer.Run(stopCh)
-	log.Infof("Waiting to sync with Kubernetes API (Nodes)")
-	if !cache.WaitForNamedCacheSync("flannelMigrationController", stopCh, c.informer.HasSynced) {
-		log.Info("Failed to sync resources, received signal for controller to shut down.")
-		return
-	}
-	log.Infof("Finished syncing with Kubernetes API (Nodes)")
-
-	// Run IPAM migration. Get list of nodes need to be migrated.
-	c.flannelNodes, err = c.runIpamMigrationForNodes()
-	if err != nil {
-		log.WithError(err).Errorf("Error running ipam migration.")
-		c.HandleError(err)
-	}
-
-	// Now that we have populated Calico with flannel's VXLAN data, we can clear the VXLAN bit
-	// in Felix - Felix will determine that VXLAN is enabled based on the fact that it is
-	// set on an IP pool.
-	if err := c.ipamMigrator.SetVXLANMode(context.TODO(), vxlanModeCleared); err != nil {
-		log.WithError(err).Errorf("Error enabling VXLAN")
-		c.HandleError(err)
-	}
+	//// Now that we have populated Calico with flannel's VXLAN data, we can clear the VXLAN bit
+	//// in Felix - Felix will determine that VXLAN is enabled based on the fact that it is
+	//// set on an IP pool.
+	//if err := c.ipamMigrator.SetVXLANMode(context.TODO(), vxlanModeCleared); err != nil {
+	//	log.WithError(err).Errorf("Error enabling VXLAN")
+	//	c.HandleError(err)
+	//}
 
 	// Add node selector "projectcalico.org/node-network-during-migration==flannel" to Flannel daemonset.
 	// This would prevent Flannel pod running on any new nodes or a node which has been migrated to Calico network.
