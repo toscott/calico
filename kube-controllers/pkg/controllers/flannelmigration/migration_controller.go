@@ -164,7 +164,7 @@ func (c *flannelMigrationController) Run(stopCh chan struct{}) {
 	}
 
 	// Start migration process.
-
+	log.Info("NISC: Not running vxlan disable.")
 	// Disable VXLAN in Felix explicitly. We don't want to turn this on until we have
 	// updated the Calico nodes with the necessary VTEP information from flannel. This ensures
 	// that Calico will respect flannel's VXLAN traffic once enabled.
@@ -173,29 +173,30 @@ func (c *flannelMigrationController) Run(stopCh chan struct{}) {
 	//	c.HandleError(err)
 	//}
 
-	//// Initialise Calico IPAM before we handle any nodes.
-	//err = c.ipamMigrator.InitialiseIPPoolAndFelixConfig()
-	//if err != nil {
-	//	log.WithError(err).Errorf("Error initialising default ipool and Felix configuration.")
-	//	c.HandleError(err)
-	//}
-	//
-	//// Wait till k8s cache is synced
-	//go c.informer.Run(stopCh)
-	//log.Infof("Waiting to sync with Kubernetes API (Nodes)")
-	//if !cache.WaitForNamedCacheSync("flannelMigrationController", stopCh, c.informer.HasSynced) {
-	//	log.Info("Failed to sync resources, received signal for controller to shut down.")
-	//	return
-	//}
-	//log.Infof("Finished syncing with Kubernetes API (Nodes)")
-	//
-	//// Run IPAM migration. Get list of nodes need to be migrated.
-	//c.flannelNodes, err = c.runIpamMigrationForNodes()
-	//if err != nil {
-	//	log.WithError(err).Errorf("Error running ipam migration.")
-	//	c.HandleError(err)
-	//}
+	// Initialise Calico IPAM before we handle any nodes.
+	err = c.ipamMigrator.InitialiseIPPoolAndFelixConfig()
+	if err != nil {
+		log.WithError(err).Errorf("Error initialising default ipool and Felix configuration.")
+		c.HandleError(err)
+	}
+	
+	// Wait till k8s cache is synced
+	go c.informer.Run(stopCh)
+	log.Infof("Waiting to sync with Kubernetes API (Nodes)")
+	if !cache.WaitForNamedCacheSync("flannelMigrationController", stopCh, c.informer.HasSynced) {
+		log.Info("Failed to sync resources, received signal for controller to shut down.")
+		return
+	}
+	log.Infof("Finished syncing with Kubernetes API (Nodes)")
+	
+	// Run IPAM migration. Get list of nodes need to be migrated.
+	c.flannelNodes, err = c.runIpamMigrationForNodes()
+	if err != nil {
+		log.WithError(err).Errorf("Error running ipam migration.")
+		c.HandleError(err)
+	}
 
+	log.Info("NISC: Not running vxlan clear.")
 	//// Now that we have populated Calico with flannel's VXLAN data, we can clear the VXLAN bit
 	//// in Felix - Felix will determine that VXLAN is enabled based on the fact that it is
 	//// set on an IP pool.
